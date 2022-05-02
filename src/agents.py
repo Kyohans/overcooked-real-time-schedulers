@@ -53,13 +53,15 @@ class FIFOAgent(GreedyAgent):
         return self.select_fifo_action(start_pos_and_or, motion_goals)
 
     def select_fifo_action(self, start_pos_and_or, motion_goals):
-        if not self.action_queue:
-
+        first_plan, first_goal = self.mlam.motion_planner.get_plan(start_pos_and_or, motion_goals[0]), motion_goals[0]
+        if 'interact' in first_plan:
+            return first_goal, first_plan[0]
+        else:
             for goal in motion_goals:
                 action_plan, _, _ = self.mlam.motion_planner.get_plan(start_pos_and_or, goal)
-                if (action_plan[0], goal) not in self.action_queue:
-                    self.action_queue.append((action_plan[0], goal))
+                if 'interact' in action_plan:
+                    first_plan = action_plan[0]
+                    first_goal = goal
 
-        action, goal = self.action_queue.popleft()
-        return goal, action
+        return first_goal, first_plan
 
