@@ -40,23 +40,26 @@ class LLFAgent(GreedyAgent):
 
         return best_goal, best_action
 
-class FIFOAgent(Agent):
+class FIFOAgent(GreedyAgent):
     """
     An agent that takes the first motion action available to them
     and follows that path. Interact actions are prioritized.
     """
-    def __init__(self):
+    def __init__(self, mlam):
+        super().__init__(mlam)
         self.action_queue = deque()
 
-    def action(self, state):
-        if not self.action_queue:
-            legal_actions = list(Action.MOTION_ACTIONS)
-            for action in legal_actions:
-                if action not in self.action_queue:
-                    self.action_queue.append(action)
+    def get_lowest_cost_action_and_goal(self, start_pos_and_or, motion_goals):
+        return self.select_fifo_action(start_pos_and_or, motion_goals)
 
-        action = self.action_queue.popleft()
-        return action, {}
-    
-    def actions(self, states):
-        return [self.action(state) for state in states]
+    def select_fifo_action(self, start_pos_and_or, motion_goals):
+        if not self.action_queue:
+
+            for goal in motion_goals:
+                action_plan, _, _ = self.mlam.motion_planner.get_plan(start_pos_and_or, goal)
+                if (action_plan[0], goal) not in self.action_queue:
+                    self.action_queue.append((action_plan[0], goal))
+
+        action, goal = self.action_queue.popleft()
+        return goal, action
+
