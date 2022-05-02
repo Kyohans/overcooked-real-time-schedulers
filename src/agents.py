@@ -1,7 +1,7 @@
-from collections import deque
 import numpy as np
-from overcooked_ai_py.mdp.actions import Action, Direction
-from overcooked_ai_py.agents.agent import Agent, GreedyHumanModel as GreedyAgent
+
+# Each agent here will inherit the Greedy model to avoid writing repeating code for the action and ml_action functions
+from overcooked_ai_py.agents.agent import GreedyHumanModel as GreedyAgent
 
 class EDFAgent(GreedyAgent):
     """
@@ -9,6 +9,9 @@ class EDFAgent(GreedyAgent):
     from the current state.
     """
     def get_lowest_cost_action_and_goal(self, start_pos_and_or, motion_goals):
+        return self.get_earliest_deadline_action_and_goal(start_pos_and_or, motion_goals)
+
+    def get_earliest_deadline_action_and_goal(self, start_pos_and_or, motion_goals):
         min_deadline = np.Inf
         earliest_action, earliest_goal = None, None
 
@@ -24,7 +27,14 @@ class EDFAgent(GreedyAgent):
         return earliest_goal, earliest_action
 
 class LLFAgent(GreedyAgent):
+    """
+    Least-Laxity-First Agent that calculates the laxity of each action (cost - deadline)
+    and selects the action with the least laxity
+    """
     def get_lowest_cost_action_and_goal(self, start_pos_and_or, motion_goals):
+        return self.get_least_laxity_action_and_goal(start_pos_and_or, motion_goals)
+
+    def get_least_laxity_action_and_goal(self, start_pos_and_or, motion_goals):
         min_laxity = np.Inf
         best_action, best_goal = None, None
 
@@ -45,23 +55,21 @@ class FIFOAgent(GreedyAgent):
     An agent that takes the first motion action available to them
     and follows that path. Interact actions are prioritized.
     """
-    def __init__(self, mlam):
-        super().__init__(mlam)
-        self.action_queue = deque()
-
     def get_lowest_cost_action_and_goal(self, start_pos_and_or, motion_goals):
-        return self.select_fifo_action(start_pos_and_or, motion_goals)
+        return self.get_fifo_action_and_goal(start_pos_and_or, motion_goals)
 
-    def select_fifo_action(self, start_pos_and_or, motion_goals):
-        first_plan, first_goal = self.mlam.motion_planner.get_plan(start_pos_and_or, motion_goals[0]), motion_goals[0]
+    def get_fifo_action_and_goal(self, start_pos_and_or, motion_goals):
+        first_plan[0], first_goal = self.mlam.motion_planner.get_plan(start_pos_and_or, motion_goals[0]), motion_goals[0]
         if 'interact' in first_plan:
-            return first_goal, first_plan[0]
+            return first_goal, first_plan
         else:
             for goal in motion_goals:
                 action_plan, _, _ = self.mlam.motion_planner.get_plan(start_pos_and_or, goal)
                 if 'interact' in action_plan:
                     first_plan = action_plan[0]
                     first_goal = goal
+                    
+                    break
 
         return first_goal, first_plan
 
