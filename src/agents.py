@@ -42,7 +42,7 @@ class LLFAgent(GreedyAgent):
             action_plan, _, plan_cost = self.mlam.motion_planner.get_plan(start_pos_and_or, goal)
             plan_deadline = len(action_plan)
 
-            plan_laxity = abs(plan_cost - plan_deadline)
+            plan_laxity = plan_deadline - plan_cost
             if plan_laxity < min_laxity:
                 min_laxity = plan_laxity
                 best_action = action_plan[0]
@@ -59,9 +59,9 @@ class FIFOAgent(GreedyAgent):
         return self.get_fifo_action_and_goal(start_pos_and_or, motion_goals)
 
     def get_fifo_action_and_goal(self, start_pos_and_or, motion_goals):
-        first_plan[0], first_goal = self.mlam.motion_planner.get_plan(start_pos_and_or, motion_goals[0]), motion_goals[0]
+        first_plan, first_goal = self.mlam.motion_planner.get_plan(start_pos_and_or, motion_goals[0]), motion_goals[0]
         if 'interact' in first_plan:
-            return first_goal, first_plan
+            return first_goal, first_plan[0]
         else:
             for goal in motion_goals:
                 action_plan, _, _ = self.mlam.motion_planner.get_plan(start_pos_and_or, goal)
